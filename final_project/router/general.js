@@ -30,88 +30,131 @@ public_users.post("/register", (req, res) => {
     return res.status(400).json({ message: "No se proporcionó nombre de usuario y/o contraseña" });
 });
 
-// Get the book list available in the shop
-public_users.get('/', function (req, res) {
-    // Enviar el objeto books formateado con JSON.stringify
-    // El 'null, 4' añade indentación de 4 espacios para que la salida se vea ordenada
-    return res.status(200).send(JSON.stringify(books, null, 4));
+// Tarea 10: Get the book list available in the shop using async/await and Promises
+public_users.get('/', async function (req, res) {
+    try {
+        // 1. Creamos una Promesa que simula una operación asíncrona (como consultar una base de datos)
+        const getBooks = new Promise((resolve, reject) => {
+            // Resolvemos la promesa devolviendo el objeto books
+            resolve(books);
+        });
+
+        // 2. Usamos await para esperar a que la Promesa se resuelva
+        const bookList = await getBooks;
+
+        // 3. Enviamos la respuesta con los datos
+        return res.status(200).send(JSON.stringify(bookList, null, 4));
+    } catch (error) {
+        // Manejo de errores en caso de que la promesa falle
+        return res.status(500).json({ message: "Error interno al obtener los libros" });
+    }
 });
 
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
-    // 1. Recuperar el ISBN de los parámetros de la solicitud
+// Tarea 11: Get book details based on ISBN using async/await and Promises
+public_users.get('/isbn/:isbn', async function (req, res) {
     const isbn = req.params.isbn;
 
-    // 2. Buscar el libro en la base de datos (objeto books) usando el ISBN como clave
-    const book = books[isbn];
+    try {
+        // 1. Creamos una Promesa para simular la búsqueda asíncrona
+        const getBookByIsbn = new Promise((resolve, reject) => {
+            const book = books[isbn];
+            if (book) {
+                resolve(book); // Si el libro existe, resolvemos la promesa con los datos
+            } else {
+                reject(new Error("Libro no encontrado")); // Si no, la rechazamos con un error
+            }
+        });
 
-    // 3. Devolver los detalles del libro si se encuentra, o un error si no existe
-    if (book) {
-        return res.status(200).json(book);
-    } else {
-        return res.status(404).json({ message: "Libro no encontrado" });
+        // 2. Usamos await para esperar el resultado de la Promesa
+        const bookData = await getBookByIsbn;
+
+        // 3. Enviamos la respuesta si se resuelve con éxito
+        return res.status(200).json(bookData);
+
+    } catch (error) {
+        // 4. Capturamos el error si la promesa fue rechazada (el libro no existe)
+        return res.status(404).json({ message: error.message });
     }
 });
 
 // Get book details based on author
-public_users.get('/author/:author', function (req, res) {
-    // 1. Recuperar el autor de los parámetros de la solicitud
+// Tarea 12: Get book details based on author using async/await and Promises
+public_users.get('/author/:author', async function (req, res) {
     const author = req.params.author;
 
-    // 2. Obtener todas las claves del objeto books
-    const keys = Object.keys(books);
+    try {
+        // 1. Creamos la Promesa para manejar la lógica de búsqueda
+        const getBooksByAuthor = new Promise((resolve, reject) => {
+            const keys = Object.keys(books);
+            let matchingBooks = [];
 
-    // 3. Crear un arreglo para almacenar los libros que coincidan
-    let matchingBooks = [];
-
-    // 4. Iterar a través de las claves y verificar si el autor coincide
-    keys.forEach(key => {
-        if (books[key].author === author) {
-            // Agregar el libro al arreglo (incluyendo su ISBN para mayor claridad)
-            matchingBooks.push({
-                isbn: key,
-                title: books[key].title,
-                reviews: books[key].reviews
+            keys.forEach(key => {
+                if (books[key].author === author) {
+                    matchingBooks.push({
+                        isbn: key,
+                        title: books[key].title,
+                        reviews: books[key].reviews
+                    });
+                }
             });
-        }
-    });
 
-    // 5. Devolver los libros encontrados o un mensaje de error si el arreglo está vacío
-    if (matchingBooks.length > 0) {
-        return res.status(200).json({ booksbyauthor: matchingBooks });
-    } else {
-        return res.status(404).json({ message: "No se encontraron libros para ese autor" });
+            // Si encontramos libros, resolvemos la promesa. Si no, la rechazamos.
+            if (matchingBooks.length > 0) {
+                resolve(matchingBooks);
+            } else {
+                reject(new Error("No se encontraron libros para ese autor"));
+            }
+        });
+
+        // 2. Esperamos a que la promesa se resuelva usando await
+        const booksByAuthor = await getBooksByAuthor;
+
+        // 3. Enviamos la respuesta exitosa
+        return res.status(200).json({ booksbyauthor: booksByAuthor });
+
+    } catch (error) {
+        // 4. Capturamos el error de la promesa rechazada
+        return res.status(404).json({ message: error.message });
     }
 });
 
-// Get all books based on title
-public_users.get('/title/:title', function (req, res) {
-    // 1. Recuperar el título de los parámetros de la solicitud
+// Tarea 13: Get all books based on title using async/await and Promises
+public_users.get('/title/:title', async function (req, res) {
     const title = req.params.title;
 
-    // 2. Obtener todas las claves del objeto books
-    const keys = Object.keys(books);
+    try {
+        // 1. Creamos la Promesa para manejar la lógica de búsqueda por título
+        const getBooksByTitle = new Promise((resolve, reject) => {
+            const keys = Object.keys(books);
+            let matchingBooks = [];
 
-    // 3. Crear un arreglo para almacenar los libros que coincidan
-    let matchingBooks = [];
-
-    // 4. Iterar a través de las claves y verificar si el título coincide
-    keys.forEach(key => {
-        if (books[key].title === title) {
-            // Agregar el libro al arreglo (incluyendo su ISBN y autor)
-            matchingBooks.push({
-                isbn: key,
-                author: books[key].author,
-                reviews: books[key].reviews
+            keys.forEach(key => {
+                if (books[key].title === title) {
+                    matchingBooks.push({
+                        isbn: key,
+                        author: books[key].author,
+                        reviews: books[key].reviews
+                    });
+                }
             });
-        }
-    });
 
-    // 5. Devolver los libros encontrados o un mensaje de error si no hay coincidencias
-    if (matchingBooks.length > 0) {
-        return res.status(200).json({ booksbytitle: matchingBooks });
-    } else {
-        return res.status(404).json({ message: "No se encontraron libros con ese título" });
+            // Resolvemos si hay coincidencias, rechazamos si no hay
+            if (matchingBooks.length > 0) {
+                resolve(matchingBooks);
+            } else {
+                reject(new Error("No se encontraron libros con ese título"));
+            }
+        });
+
+        // 2. Esperamos a que la promesa se resuelva
+        const booksByTitle = await getBooksByTitle;
+
+        // 3. Enviamos la respuesta
+        return res.status(200).json({ booksbytitle: booksByTitle });
+
+    } catch (error) {
+        // 4. Capturamos el error si no se encuentra el título
+        return res.status(404).json({ message: error.message });
     }
 });
 
